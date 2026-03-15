@@ -6,20 +6,41 @@ mapboxgl.accessToken = 'pk.eyJ1IjoicGF1LXZpY3RvIiwiYSI6ImNta2Rib2s1bTA5d2MzZW9va
 const map = new mapboxgl.Map({
     container: 'map', // container id in HTML
     style: 'mapbox://styles/pau-victo/cmmqya137000y01s64wtr7038',  // ****ADD MAP STYLE HERE *****
-    center: [-79.39, 43.65],  // starting point, longitude/latitude
-    zoom: 11 // starting zoom level
+    center: [-79.39, 43.71],  // starting point, longitude/latitude
+    zoom: 10.5 // starting zoom level
 });
 
+let collision;
 
-//let collision = data;
+fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/main/ggr472-lab4-main/data/pedcyc_collision_06-21.geojson')
+    .then(response => response.json())
+    .then(data => {
+        collision = data;
+        console.log('Collision Data loaded:', collision);
 
 
-map.on('load', () => {
-    fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/refs/heads/main/ggr472-lab4-main/data/pedcyc_collision_06-21.geojson')
-        .then(response => response.json())
-        .then(data => {
-            collision = data;
-            console.log(collision);
+        map.on('load', () => {
+            let envresult = turf.envelope(collision);
+
+            let expanded = turf.transformScale(envresult, 1.5);
+
+            let bbox = turf.bbox(expanded);
+            console.log('bbox:', bbox);
+
+            let hexgrid = turf.hexGrid(bbox, 0.5, { units: 'kilometers' });
+            console.log('hexgrid:', hexgrid);
+
+            let collected = turf.collect(hexgrid, collision, 'ACCNUM', 'collision_ids');
+
+            let maxCount = 0;
+            collected.features.forEach(feature => {
+                feature.properties.COUNT = feature.properties.collision_ids.length;
+                if (feature.properties.COUNT > maxCount) {
+                    maxCount = feature.properties.COUNT;
+                }
+            });
+            console.log("maxCount", maxCount);
+            console.log(collected);
 
             map.addSource('collision', {
                 type: 'geojson',
@@ -31,33 +52,13 @@ map.on('load', () => {
                 type: 'circle',
                 source: 'collision',
                 paint: {
-                    'circle-radius': 5,
+                    'circle-radius': 2,
                     'circle-color': '#FF0000',
-                    'circle-opacity': 0.8
+                    'circle-opacity': 0.4
                 }
             });
-            let envresult = turf.envelope(collision);
-            console.log(envresult);
 
-            let bbox = envresult.bbox;
-            console.log(bbox);
 
-            let hexgrid = turf.hexGrid(bbox, 0.5, { units: 'kilometers' });
-            console.log(hexgrid);
-            let collected = turf.collect(hexgrid, collision, 'ACCNUM', 'collision_ids');
-            console.log(collected);
-
-            let maxCount = 0;
-
-            collected.features.forEach(feature => {
-                let count = feature.properties.collision_ids.length;
-                feature.properties.COUNT = count;
-                if (count > maxCount) {
-                    maxCount = count;
-                }
-            });
-            console.log("maxCount", maxCount);
-            console.log(collected);
             map.addSource('hexgrid', {
                 type: 'geojson',
                 data: collected
@@ -67,57 +68,40 @@ map.on('load', () => {
                 id: 'hexgrid-layer',
                 type: 'fill',
                 source: 'hexgrid',
+                filter: ['>', ['get', 'COUNT'], 0],
                 paint: {
-                    'fill-color': '#00FF00',
+                    'fill-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'COUNT'],
+                        0, '#00FF00',
+                        5, '#FFFF00',
+                        15, '#FFA500',
+                        30, '#FF4500',
+                        50, '#FF0000',
+                        maxCount, '#b6ffe1'
+                    ],
                     'fill-opacity': 0.5,
-                    'fill-outline-color': '#000000'
+                    'fill-outline-color': '#aca7a7'
                 }
             });
+        });
+    });
 
-            map.addLayer({
-                id: 'hexgrid-outline',
-                type: 'line',
-                source: 'hexgrid',
-                paint: {
-                    'line-color': '#000000',
-                    'line-width': 1
-                }
-            });
-        });  // <-- Add this closing brace to end the .then(data => { ... }) block
+map.on('click', 'hexgrid-layer', (e) => {
+    const count = e.features[0].properties.COUNT;
+    new mapboxgl.Popup()
+        .setLngLat(e.lngLat)
+        .setHTML(`Number of Collisions: ${count}`)
+        .addTo(map);
 });
-//HINT: Create an empty variable
-//      Use the fetch method to access the GeoJSON from your online repository
-//      Convert the response to JSON format and then store the response in your new variable
 
+map.on('mouseenter', 'hexgrid-layer', () => {
+    map.getCanvas().style.cursor = 'pointer';
+});
 
+map.on('mouseleave', 'hexgrid-layer', () => {
+    map.getCanvas().style.cursor = '';
+});
 
-/*--------------------------------------------------------------------
-    Step 3: CREATE BOUNDING BOX AND HEXGRID
---------------------------------------------------------------------*/
-//HINT: All code to create and view the hexgrid will go inside a map load event handler
-//      First create a bounding box around the collision point data
-//      Access and store the bounding box coordinates as an array variable
-//      Use bounding box coordinates as argument in the turf hexgrid function
-//      **Option: You may want to consider how to increase the size of your bbox to enable greater geog coverage of your hexgrid
-//                Consider return types from different turf functions and required argument types carefully here
-
-
-
-/*--------------------------------------------------------------------
-Step 4: AGGREGATE COLLISIONS BY HEXGRID
---------------------------------------------------------------------*/
-//HINT: Use Turf collect function to collect all '_id' properties from the collision points data for each heaxagon
-//      View the collect output in the console. Where there are no intersecting points in polygons, arrays will be empty
-
-
-
-// /*--------------------------------------------------------------------
-// Step 5: FINALIZE YOUR WEB MAP
-// --------------------------------------------------------------------*/
-//HINT: Think about the display of your data and usability of your web map.
-//      Update the addlayer paint properties for your hexgrid using:
-//        - an expression
-//        - The COUNT attribute
-//        - The maximum number of collisions found in a hexagon
-//      Add a legend and additional functionality including pop-up windows
 
