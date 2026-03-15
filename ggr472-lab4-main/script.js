@@ -1,10 +1,4 @@
-/*--------------------------------------------------------------------
-GGR472 LAB 4: Incorporating GIS Analysis into web maps using Turf.js 
---------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------
-Step 1: INITIALIZE MAP
---------------------------------------------------------------------*/
 // Define access token
 mapboxgl.accessToken = 'pk.eyJ1IjoicGF1LXZpY3RvIiwiYSI6ImNta2Rib2s1bTA5d2MzZW9vaGF2a3hrczkifQ.ie1nrw6qR60q70TUdf5B_w'; //****ADD YOUR PUBLIC ACCESS TOKEN*****
 
@@ -17,61 +11,80 @@ const map = new mapboxgl.Map({
 });
 
 
-/*--------------------------------------------------------------------
-Step 2: VIEW GEOJSON POINT DATA ON MAP
---------------------------------------------------------------------*/
-let collision;
+//let collision = data;
 
-fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/refs/heads/main/ggr472-lab4-main/data/pedcyc_collision_06-21.geojson')
-    .then(response => response.json())
-    .then(data => {
-        collision = data;
-        console.log(collision);
-        // Process the fetched GeoJSON data
-    map.on('load', () => {
-        // Add the collision data as a source and layer to the map
-        map.addSource('collision', {
-            type: 'geojson',
-            data: collision
-        });
-        
-        map.addLayer({
-            id: 'collision-layer',
-            type: 'circle',
-            source: 'collision',
-            paint: {
-                'circle-radius': 5,
-                'circle-color': '#FF0000',
-                'circle-opacity': 0.8
-            }
-        });
-        let envresult = turf.envelope(collision);
-        console.log(envresult);
-         
-        let bbox = envresult.bbox;
-        console.log(bbox);
 
-        let hexgrid = turf.hexGrid(bbox, 0.5, {units: 'kilometers'});
-        console.log(hexgrid);
+map.on('load', () => {
+    fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/refs/heads/main/ggr472-lab4-main/data/pedcyc_collision_06-21.geojson')
+        .then(response => response.json())
+        .then(data => {
+            collision = data;
+            console.log(collision);
 
-         map.addSource('hexgrid', {
-            type: 'geojson',
-            data: hexgrid
-        });
-        
-        map.addLayer({
-            id: 'hexgrid-layer',
-            type: 'fill',
-            source: 'hexgrid',
-            paint: {
-                'fill-color': '#00FF00',
-                'fill-opacity': 0.5,
-                'fill-outline-color': '#000000'
-            }
-    });
-    // End of map.on('load', ...)
-}); 
-});// <-- Add this closing brace to end the .then(data => { ... }) block
+            map.addSource('collision', {
+                type: 'geojson',
+                data: collision
+            });
+
+            map.addLayer({
+                id: 'collision-layer',
+                type: 'circle',
+                source: 'collision',
+                paint: {
+                    'circle-radius': 5,
+                    'circle-color': '#FF0000',
+                    'circle-opacity': 0.8
+                }
+            });
+            let envresult = turf.envelope(collision);
+            console.log(envresult);
+
+            let bbox = envresult.bbox;
+            console.log(bbox);
+
+            let hexgrid = turf.hexGrid(bbox, 0.5, { units: 'kilometers' });
+            console.log(hexgrid);
+            let collected = turf.collect(hexgrid, collision, 'ACCNUM', 'collision_ids');
+            console.log(collected);
+
+            let maxCount = 0;
+
+            collected.features.forEach(feature => {
+                let count = feature.properties.collision_ids.length;
+                feature.properties.COUNT = count;
+                if (count > maxCount) {
+                    maxCount = count;
+                }
+            });
+            console.log("maxCount", maxCount);
+            console.log(collected);
+            map.addSource('hexgrid', {
+                type: 'geojson',
+                data: collected
+            });
+
+            map.addLayer({
+                id: 'hexgrid-layer',
+                type: 'fill',
+                source: 'hexgrid',
+                paint: {
+                    'fill-color': '#00FF00',
+                    'fill-opacity': 0.5,
+                    'fill-outline-color': '#000000'
+                }
+            });
+
+            map.addLayer({
+                id: 'hexgrid-outline',
+                type: 'line',
+                source: 'hexgrid',
+                paint: {
+                    'line-color': '#000000',
+                    'line-width': 1
+                }
+            });
+        });  // <-- Add this closing brace to end the .then(data => { ... }) block
+});
 //HINT: Create an empty variable
 //      Use the fetch method to access the GeoJSON from your online repository
 //      Convert the response to JSON format and then store the response in your new variable
