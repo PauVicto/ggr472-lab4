@@ -22,7 +22,7 @@ Step 2: VIEW GEOJSON POINT DATA ON MAP
 --------------------------------------------------------------------*/
 let collision;
 
-fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/refs/heads/main/ggr472-lab4-main/data/pedcyc_collision_06-21.geojson?token=GHSAT0AAAAAADTF26IX6WGGMZNXVVVZ4NZO2NV553A')
+fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/refs/heads/main/ggr472-lab4-main/data/pedcyc_collision_06-21.geojson')
     .then(response => response.json())
     .then(data => {
         collision = data;
@@ -48,7 +48,7 @@ fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/refs/heads/main/gg
         let envresult = turf.envelope(collision);
         console.log(envresult);
          
-        let bbox = enveresult.bbox;
+        let bbox = envresult.bbox;
         console.log(bbox);
 
         let hexgrid = turf.hexGrid(bbox, 0.5, {units: 'kilometers'});
