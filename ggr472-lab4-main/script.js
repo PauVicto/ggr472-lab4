@@ -20,6 +20,58 @@ const map = new mapboxgl.Map({
 /*--------------------------------------------------------------------
 Step 2: VIEW GEOJSON POINT DATA ON MAP
 --------------------------------------------------------------------*/
+let collision;
+
+fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/refs/heads/main/ggr472-lab4-main/data/pedcyc_collision_06-21.geojson?token=GHSAT0AAAAAADTF26IX6WGGMZNXVVVZ4NZO2NV553A')
+    .then(response => response.json())
+    .then(data => {
+        collision = data;
+        console.log(collision);
+        // Process the fetched GeoJSON data
+    map.on('load', () => {
+        // Add the collision data as a source and layer to the map
+        map.addSource('collision', {
+            type: 'geojson',
+            data: collision
+        });
+        
+        map.addLayer({
+            id: 'collision-layer',
+            type: 'circle',
+            source: 'collision',
+            paint: {
+                'circle-radius': 5,
+                'circle-color': '#FF0000',
+                'circle-opacity': 0.8
+            }
+        });
+        let envresult = turf.envelope(collision);
+        console.log(envresult);
+         
+        let bbox = enveresult.bbox;
+        console.log(bbox);
+
+        let hexgrid = turf.hexGrid(bbox, 0.5, {units: 'kilometers'});
+        console.log(hexgrid);
+
+         map.addSource('hexgrid', {
+            type: 'geojson',
+            data: hexgrid
+        });
+        
+        map.addLayer({
+            id: 'hexgrid-layer',
+            type: 'fill',
+            source: 'hexgrid',
+            paint: {
+                'fill-color': '#00FF00',
+                'fill-opacity': 0.5,
+                'fill-outline-color': '#000000'
+            }
+    });
+    // End of map.on('load', ...)
+}); 
+});// <-- Add this closing brace to end the .then(data => { ... }) block
 //HINT: Create an empty variable
 //      Use the fetch method to access the GeoJSON from your online repository
 //      Convert the response to JSON format and then store the response in your new variable
@@ -55,5 +107,4 @@ Step 4: AGGREGATE COLLISIONS BY HEXGRID
 //        - The COUNT attribute
 //        - The maximum number of collisions found in a hexagon
 //      Add a legend and additional functionality including pop-up windows
-
 
