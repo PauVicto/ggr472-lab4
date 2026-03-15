@@ -10,6 +10,10 @@ const map = new mapboxgl.Map({
     zoom: 10.5 // starting zoom level
 });
 
+map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+map.addControl(map.geoControls, 'top-left');
+
 let collision;
 
 fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/main/ggr472-lab4-main/data/pedcyc_collision_06-21.geojson')
@@ -86,6 +90,7 @@ fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/main/ggr472-lab4-m
                 }
             });
         });
+
     });
 
 map.on('click', 'hexgrid-layer', (e) => {
@@ -95,13 +100,55 @@ map.on('click', 'hexgrid-layer', (e) => {
         .setHTML(`Number of Collisions: ${count}`)
         .addTo(map);
 });
-
 map.on('mouseenter', 'hexgrid-layer', () => {
     map.getCanvas().style.cursor = 'pointer';
 });
-
 map.on('mouseleave', 'hexgrid-layer', () => {
     map.getCanvas().style.cursor = '';
 });
 
+document.getElementById('show-hexgrid').addEventListener('change', (e) => {
+    map.setLayoutProperty('hexgrid-layer', 'visibility', e.target.checked ? 'visible' : 'none');
+});
 
+document.getElementById('show-collisions').addEventListener('change', (e) => {
+    map.setLayoutProperty('collision-layer', 'visibility', e.target.checked ? 'visible' : 'none');
+});
+
+const legenditems = [
+    { label: '1-4 Collisions', color: '#00FF00' },
+    { label: '5-14 Collisions', color: '#FFFF00' },
+    { label: '15-29 Collisions', color: '#FFA500' },
+    { label: '30-49 Collisions', color: '#FF4500' },
+    { label: '50+ Collisions', color: '#FF0000' }
+];
+const legend = document.querySelector('.legend');
+
+legenditems.forEach(({ label, color }) => {
+    const row = document.createElement('div');
+    row.className = 'legend-row';
+
+    const square = document.createElement('span');
+    square.className = 'square';
+    square.style.backgroundColor = color;
+
+    const text = document.createElement('span');
+    text.textContent = label;
+
+    row.append(square);
+    row.appendChild(text);
+    legend.appendChild(row);
+});
+
+const pointRow = document.createElement('div');
+pointRow.className = 'legend-row';
+const dot = document.createElement('span');
+dot.className = 'dot';
+dot.style.backgroundColor = '#FF0000';
+
+const pointText = document.createElement('span');
+pointText.textContent = 'Collision Points';
+
+pointRow.appendChild(dot);
+pointRow.appendChild(pointText);
+legend.appendChild(pointRow);
