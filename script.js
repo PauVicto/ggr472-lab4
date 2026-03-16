@@ -19,7 +19,7 @@ map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 let collision; //Empty variable to store collision JSON data
 
 //fetch the collision GeoJSON data from github
-fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/main/ggr472-lab4-main/data/pedcyc_collision_06-21.geojson')
+fetch('https://raw.githubusercontent.com/PauVicto/ggr472-lab4/main/data/pedcyc_collision_06-21.geojson')
     .then(response => response.json())
     .then(data => {
         collision = data;
