@@ -1,3 +1,4 @@
+/* Default map styling */
 .map {
     position: absolute;
     top: 0;
@@ -7,6 +8,7 @@
     width: 100%;
 }
 
+/* Legend styling*/
 .legend {
     position: absolute;
     bottom: 35px;
@@ -46,6 +48,7 @@
     border: 1px solid #ccc;
 }
 
+/* Controls styling */
 .controls {
     position: absolute;
     top: 20px;
